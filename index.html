@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CRYPTO PRO TERMINAL</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+  :root {
+    --bg: #000000;
+    --card-bg: #0b0d0f;
+    --header-bg: #111316;
+    --text: #e6edf3;
+    --dim: #6e7681;
+    --input-bg: #0d1117;
+
+    --up: #00ff7f;   
+    --down: #ff3b3b; 
+    --gold: #ffb700; 
+
+    --font: 'SF Mono', 'Roboto Mono', 'Consolas', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0; padding: 10px;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* --- SEARCH BAR --- */
+  .search-con {
+    display: flex; gap: 10px; margin-bottom: 10px;
+    background: var(--header-bg); padding: 10px; border-radius: 6px; border: 1px solid #222;
+  }
+  .search-inp {
+    flex: 1; background: var(--input-bg); border: 1px solid #333; color: #fff;
+    padding: 8px 10px; border-radius: 4px; font-family: var(--font); font-size: 14px; text-transform: uppercase;
+  }
+  .search-inp:focus { outline: none; border-color: var(--gold); }
+  .search-btn {
+    background: var(--gold); color: #000; border: none; font-weight: bold;
+    padding: 0 20px; border-radius: 4px; cursor: pointer;
+  }
+
+  /* --- DASHBOARD (TOP) --- */
+  .dashboard {
+    display: grid; 
+    grid-template-columns: 1fr 1fr 1fr 1.5fr; 
+    gap: 8px;
+    margin-bottom: 15px; 
+    flex-shrink: 0;
+  }
+
+  .dash-box {
+    background: var(--header-bg); border: 1px solid #222; border-radius: 6px;
+    padding: 10px; display: flex; flex-direction: column; justify-content: center;
+    min-height: 80px;
+  }
+
+  .lbl { font-size: 10px; color: var(--dim); letter-spacing: 1px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
+  .val { font-family: var(--font); font-size: 16px; font-weight: 800; display: flex; justify-content: space-between; align-items: flex-end; }
+
+  .bar-con { width: 100%; height: 4px; background: #222; margin-top: 8px; display: flex; border-radius: 2px; overflow: hidden; }
+  .bar-up { height: 100%; background: var(--up); transition: width 0.3s; }
+  .bar-down { flex: 1; background: var(--down); }
+
+  .log-box {
+    background: #050505; border: 1px solid #222; overflow-y: auto;
+    font-family: var(--font); font-size: 10px; padding: 5px;
+    height: 100%; max-height: 80px; border-radius: 6px;
+  }
+  .log-row { border-bottom: 1px solid #111; padding: 3px 0; display: flex; gap: 8px; }
+  .whale-log { color: var(--gold); }
+
+  /* --- TOOLBAR --- */
+  .toolbar {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 15px;
+    background: var(--header-bg); padding: 8px; border-radius: 6px; border: 1px solid #222;
+    flex-wrap: wrap; 
+  }
+
+  .btn {
+    background: #21262d; border: 1px solid #333; color: var(--dim);
+    padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;
+    flex: 1; text-align: center; white-space: nowrap;
+  }
+  .btn:hover { color: #fff; background: #30363d; }
+  .btn.active { background: var(--up); color: #000; border-color: var(--up); }
+
+  /* --- GRID --- */
+  .grid {
+    display: flex; flex-wrap: wrap; gap: 15px;
+    height: auto; 
+    align-content: flex-start;
+  }
+
+  .card {
+    background: var(--card-bg); border: 1px solid #222; border-radius: 8px;
+    display: flex; flex-direction: column;
+    flex: 1 1 300px; 
+    min-width: 300px;
+    height: 450px; 
+    transition: order 0.5s ease, border-color 0.2s;
+    overflow: hidden; 
+  }
+
+  .card.leader { border: 1px solid var(--gold); box-shadow: 0 0 15px rgba(255, 183, 0, 0.15); }
+
+  .c-head {
+    padding: 12px; background: #15181c; border-bottom: 1px solid #222;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .ex-name { font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #444; }
+  .dot.on { background: var(--up); box-shadow: 0 0 6px var(--up); }
+
+  .price { font-family: var(--font); font-size: 16px; font-weight: bold; color: #fff; }
+
+  .stats {
+    display: flex; justify-content: space-between; padding: 8px 12px;
+    font-size: 11px; color: var(--dim); background: rgba(255,255,255,0.03); border-bottom: 1px solid #222;
+  }
+
+  .feed-hd {
+    display: grid; 
+    grid-template-columns: 0.6fr 0.8fr 0.8fr 0.5fr; 
+    padding: 8px 12px;
+    font-size: 10px; color: #666; font-weight: bold; background: #0e0e0e;
+  }
+
+  .feed { 
+    flex: 1; 
+    overflow-y: auto; 
+    scrollbar-width: thin; scrollbar-color: #333 #000;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .row {
+    display: grid; 
+    grid-template-columns: 0.6fr 0.8fr 0.8fr 0.5fr; 
+    padding: 4px 12px;
+    font-family: var(--font); font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.03);
+    align-items: center; height: 26px;
+  }
+
+  .buy span:nth-child(2) { color: var(--up); }
+  .sell span:nth-child(2) { color: var(--down); }
+  .row span:nth-child(3) { color: #ccc; font-weight: normal; } 
+
+  .hl-whale { background: rgba(255, 183, 0, 0.15); }
+  .hl-whale span { color: var(--gold) !important; font-weight: bold; }
+
+  @keyframes flashGreen { 0% { background-color: rgba(0,255,127,0.3); } 100% { background-color: transparent; } }
+  @keyframes flashRed { 0% { background-color: rgba(255,59,59,0.3); } 100% { background-color: transparent; } }
+  .flash-up { animation: flashGreen 0.4s ease-out; }
+  .flash-down { animation: flashRed 0.4s ease-out; }
+
+  @media(max-width: 800px) { 
+    .dashboard { grid-template-columns: 1fr 1fr; height: auto; }
+    .log-box { grid-column: 1 / -1; max-height: 100px; }
+    .card { min-width: 100%; height: 400px; }
+    .btn { font-size: 10px; padding: 8px 5px; }
+  }
+
+  @media(max-width: 480px) {
+    body { padding: 5px; }
+    .toolbar { gap: 5px; }
+    .val { font-size: 14px; }
+    .row { font-size: 10px; padding: 4px 8px; } 
+    .feed-hd { padding: 5px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SEARCH BAR -->
+<div class="search-con">
+  <input type="text" id="symbolInput" class="search-inp" placeholder="Symbol (e.g. ETHUSDT, PEPE)" value="BTCUSDT">
+  <button class="btn search-btn" onclick="changePair()">GO</button>
+</div>
+
+<div class="dashboard">
+  <!-- CASH FLOW -->
+  <div class="dash-box">
+    <div class="lbl">NET FLOW</div>
+    <div class="val"><span id="g-net" style="font-size:18px">$0</span></div>
+    <div class="bar-con"><div id="bar-usd" class="bar-up" style="width:50%"></div><div class="bar-down"></div></div>
+    <div style="display:flex; justify-content:space-between; font-size:9px; margin-top:5px; color:#888;">
+      <span>IN: <span id="g-in" style="color:#fff">0</span></span>
+      <span>OUT: <span id="g-out" style="color:#fff">0</span></span>
+    </div>
+  </div>
+
+  <!-- VOLUME -->
+  <div class="dash-box">
+    <div class="lbl">VOL (USD)</div>
+    <div class="val">
+      <span style="color:var(--up)" id="g-vol-buy">$0</span>
+      <span style="color:var(--down)" id="g-vol-sell">$0</span>
+    </div>
+    <div class="bar-con"><div id="bar-vol" class="bar-up" style="width:50%"></div><div class="bar-down"></div></div>
+  </div>
+
+  <!-- TX COUNT -->
+  <div class="dash-box">
+    <div class="lbl">TXs</div>
+    <div class="val">
+      <span id="g-cnt">0</span>
+      <span style="font-size:11px; color:var(--gold);">WHALE:<span id="g-whales">0</span></span>
+    </div>
+    <div class="bar-con"><div id="bar-cnt" class="bar-up" style="width:50%"></div><div class="bar-down"></div></div>
+  </div>
+
+  <!-- LOG -->
+  <div class="log-box" id="eventLog">
+    <div class="log-row" style="color:#666">System initialized. Waiting for feed...</div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <span style="font-size:10px; font-weight:bold; color:var(--gold); margin-right:5px;">FILT:</span>
+  <button class="btn" onclick="setFilter(0)">ALL</button>
+  <button class="btn active" onclick="setFilter(5000)">$5K</button>
+  <button class="btn" onclick="setFilter(50000)">$50K</button>
+  <button class="btn" onclick="setFilter(250000)">$250K</button>
+  <div style="flex-basis:100%; height:0; display:none;"></div> 
+  <span style="font-size:9px; color:#555; margin-left:auto; margin-right:5px">SORT:AUTO</span>
+  <button id="sndBtn" class="btn" onclick="toggleSound()">🔇</button>
+  <button class="btn" style="background:#8b0000; color:#fff" onclick="reset()">RESET (BTC)</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+// --- CONFIGURATION ---
+const EXCHANGES = [
+  { id: 'binance',  name: 'BINANCE',  ws: 'wss://stream.binance.com:9443/ws/' },
+  { id: 'gateio',   name: 'GATE.IO',  ws: 'wss://api.gateio.ws/ws/v4/' }, 
+  { id: 'bybit',    name: 'BYBIT',    ws: 'wss://stream.bybit.com/v5/public/spot' },
+  { id: 'okx',      name: 'OKX',      ws: 'wss://ws.okx.com:8443/ws/v5/public' },
+  { id: 'coinbase', name: 'COINBASE', ws: 'wss://advanced-trade-ws.coinbase.com' },
+  { id: 'kraken',   name: 'KRAKEN',   ws: 'wss://ws.kraken.com' },
+  { id: 'bitfinex', name: 'BITFINEX', ws: 'wss://api-pub.bitfinex.com/ws/2' } 
+];
+
+// STATE
+let minUSD = 5000; 
+let soundOn = false;
+let global = { buyUSD:0, sellUSD:0, cntBuy:0, cntSell:0, whales:0 };
+let stats = {};
+let activeSymbol = 'BTC'; // Default Base Asset
+let sockets = {}; // Keep track of WS to close them
+const MAX_ROWS = 40;
+const AudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// --- INITIALIZATION ---
+function init() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  EXCHANGES.forEach(ex => {
+    // Init Stats
+    stats[ex.id] = { buyUSD: 0, sellUSD: 0, price: 0, totalUSD: 0 };
+
+    // Create UI Card
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.id = `card-${ex.id}`;
+    div.style.order = "0";
+
+    div.innerHTML = `
+      <div class="c-head">
+        <div class="ex-name">
+          <span id="dot-${ex.id}" class="dot"></span>${ex.name}
+          <span id="cr-${ex.id}" style="display:none; margin-left:5px">👑</span>
+        </div>
+        <div class="price" id="p-${ex.id}">$---</div>
+      </div>
+      <div class="stats">
+        <span>VOL: <span id="v-${ex.id}" style="color:#fff">$0</span></span>
+        <span>FLOW: <span id="f-${ex.id}">$0</span></span>
+      </div>
+      <div class="feed-hd">
+        <span>QTY</span>
+        <span style="text-align:right">PRICE</span>
+        <span style="text-align:right">VAL($)</span>
+        <span style="text-align:right">TIME</span>
+      </div>
+      <div id="feed-${ex.id}" class="feed"></div>
+    `;
+    grid.appendChild(div);
+  });
+
+  connectAll();
+  setInterval(autoSort, 3000);
+}
+
+// --- CONNECTION MANAGER ---
+function changePair() {
+  const input = document.getElementById('symbolInput').value.trim().toUpperCase();
+  if(!input) return;
+
+  // Extract Base Asset (remove USDT or USD)
+  let base = input.replace('USDT','').replace('USD','').replace('-','').replace('/','');
+  if(!base) base = 'BTC';
+
+  activeSymbol = base;
+  log(`Switching to ${activeSymbol}...`, 'normal');
+
+  // Close all existing connections
+  Object.values(sockets).forEach(ws => ws.close());
+  sockets = {};
+
+  // Clear data
+  global = { buyUSD:0, sellUSD:0, cntBuy:0, cntSell:0, whales:0 };
+  EXCHANGES.forEach(ex => {
+    stats[ex.id] = { buyUSD:0, sellUSD:0, totalUSD:0, price:0 };
+    document.getElementById(`feed-${ex.id}`).innerHTML = '';
+    document.getElementById(`p-${ex.id}`).innerText = '$---';
+    document.getElementById(`dot-${ex.id}`).classList.remove('on');
+  });
+  updateDashboard();
+
+  connectAll();
+}
+
+function connectAll() {
+  EXCHANGES.forEach(ex => connect(ex));
+}
+
+function connect(exObj) {
+  const ex = exObj.id;
+  const s = activeSymbol;
+  let wsUrl = exObj.ws;
+
+  // Special URL construction for Binance
+  if(ex === 'binance') {
+    wsUrl += `${s.toLowerCase()}usdt@trade`;
+  }
+
+  try {
+    const ws = new WebSocket(wsUrl);
+    sockets[ex] = ws;
+
+    ws.onopen = () => {
+      document.getElementById(`dot-${ex}`).classList.add('on');
+
+      // Dynamic Subscriptions
+      if(ex==='bybit') {
+        ws.send(JSON.stringify({op:"subscribe", args:[`publicTrade.${s}USDT`]}));
+      }
+      if(ex==='okx') {
+        ws.send(JSON.stringify({op:"subscribe", args:[{channel:"trades", instId:`${s}-USDT`}]}));
+      }
+      if(ex==='coinbase') {
+        ws.send(JSON.stringify({type:"subscribe", channel:"market_trades", product_ids:[`${s}-USD`]}));
+      }
+      if(ex==='kraken') {
+        // Kraken uses XBT for BTC usually
+        const kPair = (s==='BTC'?'XBT':s) + '/USD';
+        ws.send(JSON.stringify({event:"subscribe", pair:[kPair], subscription:{name:"trade"}}));
+      }
+      if(ex==='bitfinex') {
+        ws.send(JSON.stringify({event:"subscribe", channel:"trades", symbol:`t${s}USD`}));
+      }
+      if(ex==='gateio') {
+        ws.send(JSON.stringify({ time: parseInt(Date.now()/1000), channel: "spot.trades", event: "subscribe", payload: [`${s}_USDT`] }));
+        // Ping Interval for Gate
+        if(!ws.pingInt) {
+            ws.pingInt = setInterval(() => { if(ws.readyState===1) ws.send(JSON.stringify({method:"PING"})); }, 20000);
+        }
+      }
+    };
+
+    ws.onclose = () => {
+      document.getElementById(`dot-${ex}`).classList.remove('on');
+      // Auto reconnect only if we haven't manually switched symbols
+      // We check if this socket is still the active one
+      if(sockets[ex] === ws) {
+         setTimeout(() => connect(exObj), 2000);
+      }
+    };
+
+    ws.onmessage = (msg) => parse(ex, msg);
+
+  } catch(e) { console.error(ex, e); }
+}
+
+// --- PARSING ENGINE ---
+function parse(ex, msg) {
+  const d = JSON.parse(msg.data);
+  let p=0, q=0, side='', t=Date.now();
+
+  try {
+    if(ex==='binance') {
+      if(!d.e) return; p=parseFloat(d.p); q=parseFloat(d.q); side=d.m?'sell':'buy';
+    }
+    else if(ex==='gateio') {
+      if(d.event==='update' && d.result) {
+        if(Array.isArray(d.result)) {
+           d.result.forEach(tr => process(ex, parseFloat(tr.price), parseFloat(tr.amount), tr.side, parseInt(tr.create_time_ms)));
+           return;
+        } else {
+           p=parseFloat(d.result.price); q=parseFloat(d.result.amount); side=d.result.side; t=parseInt(d.result.create_time_ms);
+        }
+      }
+    }
+    else if(ex==='bybit') {
+      if(d.topic && d.topic.includes('publicTrade') && d.data) {
+        d.data.forEach(x => process(ex, parseFloat(x.p), parseFloat(x.v), x.S.toLowerCase(), x.T)); return;
+      }
+    }
+    else if(ex==='okx') {
+      if(!d.data) return; p=parseFloat(d.data[0].px); q=parseFloat(d.data[0].sz); side=d.data[0].side;
+    }
+    else if(ex==='coinbase') {
+      if(!d.events) return; const x=d.events[0].trades[0]; p=parseFloat(x.price); q=parseFloat(x.size); side=x.side==='BUY'?'buy':'sell';
+    }
+    else if(ex==='kraken') {
+      if(!Array.isArray(d)||!d[1]) return; const x=d[1][0]; p=parseFloat(x[0]); q=parseFloat(x[1]); side=x[3]==='b'?'buy':'sell';
+    }
+    else if(ex==='bitfinex') {
+      if(!Array.isArray(d)||d[1]!=='tu') return; 
+      q=Math.abs(d[2][2]); p=d[2][3]; side=d[2][2]>0?'buy':'sell';
+    }
+
+    if(p && q) process(ex, p, q, side, t);
+
+  } catch(e) {}
+}
+
+// --- CORE PROCESSOR ---
+function process(ex, price, qty, side, time) {
+  const valUSD = price * qty;
+
+  // Global Stats
+  if(side==='buy') {
+    global.buyUSD += valUSD; global.cntBuy++; stats[ex].buyUSD += valUSD;
+  } else {
+    global.sellUSD += valUSD; global.cntSell++; stats[ex].sellUSD += valUSD;
+  }
+
+  stats[ex].totalUSD = stats[ex].buyUSD + stats[ex].sellUSD;
+  stats[ex].price = price;
+
+  updateDashboard();
+  updateCard(ex, price, side);
+
+  // Filter
+  if(valUSD < minUSD) return;
+
+  // Add Row
+  const feed = document.getElementById(`feed-${ex}`);
+  const row = document.createElement('div');
+  const isWhale = valUSD >= 50000;
+
+  if(isWhale) {
+    global.whales++;
+    log(`WHALE [${ex}] ${side.toUpperCase()} ${fmtMoney(valUSD)}`, 'whale');
+    if(soundOn) beep(600, 0.2, 'square');
+  } else if(soundOn && valUSD >= 10000) {
+    beep(side==='buy'?800:300, 0.05, 'sine');
+  }
+
+  // Flash Card
+  const card = document.getElementById(`card-${ex}`);
+  card.classList.add(side==='buy'?'flash-up':'flash-down');
+  setTimeout(()=>card.classList.remove('flash-up','flash-down'), 300);
+
+  row.className = `row ${side} ${isWhale?'hl-whale':''}`;
+
+  row.innerHTML = `
+    <span>${qty.toFixed(4)}</span>
+    <span>${fmtPrice(price)}</span>
+    <span style="text-align:right">${fmtMoney(valUSD)}</span>
+    <span style="text-align:right">${new Date().toLocaleTimeString().split(' ')[0]}</span>
+  `;
+
+  feed.prepend(row);
+  if(feed.children.length > MAX_ROWS) feed.lastElementChild.remove();
+}
+
+// --- UI HELPERS ---
+function updateDashboard() {
+  document.getElementById('g-net').innerText = fmtMoney(global.buyUSD - global.sellUSD, true);
+  document.getElementById('g-net').style.color = (global.buyUSD - global.sellUSD)>=0 ? 'var(--up)' : 'var(--down)';
+
+  document.getElementById('g-in').innerText = fmtMoney(global.buyUSD);
+  document.getElementById('g-out').innerText = fmtMoney(global.sellUSD);
+
+  const tUSD = global.buyUSD + global.sellUSD;
+  document.getElementById('bar-usd').style.width = tUSD>0 ? (global.buyUSD/tUSD)*100 + '%' : '50%';
+
+  document.getElementById('g-vol-buy').innerText = fmtMoney(global.buyUSD);
+  document.getElementById('g-vol-sell').innerText = fmtMoney(global.sellUSD);
+  document.getElementById('bar-vol').style.width = tUSD>0 ? (global.buyUSD/tUSD)*100 + '%' : '50%';
+
+  document.getElementById('g-cnt').innerText = global.cntBuy + global.cntSell;
+  const tCnt = global.cntBuy + global.cntSell;
+  document.getElementById('bar-cnt').style.width = tCnt>0 ? (global.cntBuy/tCnt)*100 + '%' : '50%';
+
+  document.getElementById('g-whales').innerText = global.whales;
+}
+
+function updateCard(ex, price, side) {
+  const elP = document.getElementById(`p-${ex}`);
+  elP.innerText = fmtPrice(price);
+  elP.style.color = side==='buy'?'var(--up)':'var(--down)';
+
+  document.getElementById(`v-${ex}`).innerText = fmtShort(stats[ex].totalUSD);
+
+  const flow = stats[ex].buyUSD - stats[ex].sellUSD;
+  const elF = document.getElementById(`f-${ex}`);
+  elF.innerText = (flow>0?'+':'') + fmtShort(flow);
+  elF.style.color = flow>=0 ? 'var(--up)' : 'var(--down)';
+}
+
+function autoSort() {
+  let max = 0; let leader = '';
+  EXCHANGES.forEach(ex => {
+    const v = stats[ex.id].totalUSD;
+    const c = document.getElementById(`card-${ex.id}`);
+    c.style.order = Math.floor(v * -1); 
+    c.classList.remove('leader');
+    document.getElementById(`cr-${ex.id}`).style.display = 'none';
+
+    if(v > max) { max = v; leader = ex.id; }
+  });
+
+  if(leader) {
+    document.getElementById(`card-${leader}`).classList.add('leader');
+    document.getElementById(`cr-${leader}`).style.display = 'inline';
+  }
+}
+
+// --- UTILS ---
+function fmtPrice(n) { 
+  // Dinamik basamak sayısı (Düşük fiyatlı coinler için - örn PEPE)
+  let d = 2;
+  if(n < 1) d = 6;
+  else if(n < 10) d = 4;
+
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d}); 
+}
+function fmtMoney(n, full=false) { 
+  if(full) return '$' + n.toLocaleString('en-US', {maximumFractionDigits:0});
+  return '$' + n.toLocaleString('en-US', {maximumFractionDigits:0});
+}
+function fmtShort(n) {
+  if(Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+  if(Math.abs(n) >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + n.toFixed(0);
+}
+
+function log(msg, type) {
+  const box = document.getElementById('eventLog');
+  const div = document.createElement('div');
+  div.className = `log-row ${type==='whale'?'whale-log':''}`;
+  div.innerHTML = `<span>${new Date().toLocaleTimeString().split(' ')[0]}</span> ${msg}`;
+  box.prepend(div);
+  if(box.children.length > 30) box.lastElementChild.remove();
+}
+
+function setFilter(v) {
+  minUSD = v;
+  document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function toggleSound() {
+  soundOn = !soundOn;
+  document.getElementById('sndBtn').innerText = soundOn ? '🔊' : '🔇';
+  if(soundOn) AudioCtx.resume();
+}
+
+function beep(f,v,t) {
+  if(AudioCtx.state==='suspended') AudioCtx.resume();
+  const o=AudioCtx.createOscillator(); const g=AudioCtx.createGain();
+  o.connect(g); g.connect(AudioCtx.destination);
+  o.type=t; o.frequency.value=f; g.gain.value=v;
+  g.gain.exponentialRampToValueAtTime(0.001, AudioCtx.currentTime+0.1);
+  o.start(); o.stop(AudioCtx.currentTime+0.1);
+}
+
+function reset() {
+  document.getElementById('symbolInput').value = 'BTCUSDT';
+  changePair();
+}
+
+// Init Application
+init();
+</script>
+</body>
+</html>
